@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Header as HeaderComp,
   Footer as FooterComp,
@@ -9,7 +9,7 @@ import {
   ConfirmationPage as ConfirmationPageComp,
   AdminView as AdminViewComp,
 } from './components';
-import { jobs } from './mockData';
+import { jobs as mockJobs } from './mockData';
 
 
 // ---------------------------------------------------------------------------
@@ -125,7 +125,8 @@ const JobPortalApp = () => {
   const [filteredJobs, setFilteredJobs] = useState([]);
   const [applications, setApplications] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState(null);
+  const [useMockData, setUseMockData] = useState(true); // Set to true for GitHub Pages
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState('all');
   const [formData, setFormData] = useState({
@@ -155,9 +156,20 @@ const JobPortalApp = () => {
           submittedAt: a.createdAt,
         }));
         setApplications(normalized);
-  }, []);
+      } catch (err) {
+        setError(err.message || 'Error fetching applications');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchApps();
+  }, [isAdmin]);
 
   // Filter jobs based on search term & type
+  useEffect(() => {
+    setLoading(false);
+  }, []);
+
   useEffect(() => {
     let filtered = jobs;
 
