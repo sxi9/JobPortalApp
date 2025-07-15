@@ -1,4 +1,4 @@
-# CareerBoost Job Portal
+# Jobs Portal
 
 A modern job portal application built with React and Vite.
 
