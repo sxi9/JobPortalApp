@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   Header as HeaderComp,
   Footer as FooterComp,
@@ -9,6 +9,7 @@ import {
   ConfirmationPage as ConfirmationPageComp,
   AdminView as AdminViewComp,
 } from './components';
+import { jobs } from './mockData';
 
 
 // ---------------------------------------------------------------------------
@@ -154,32 +155,6 @@ const JobPortalApp = () => {
           submittedAt: a.createdAt,
         }));
         setApplications(normalized);
-        setLoading(false);
-      } catch (err) {
-        setError(err.message || 'Error fetching applications');
-        setLoading(false);
-      }
-    };
-    fetchApps();
-  }, [isAdmin]);
-
-  // Fetch job list from backend on mount
-  useEffect(() => {
-    const fetchJobs = async () => {
-      try {
-        setLoading(true);
-        const res = await fetch('http://localhost:4000/jobs');
-        if (!res.ok) throw new Error('Failed to fetch jobs');
-        const data = await res.json();
-        setJobs(data);
-        setFilteredJobs(data);
-        setLoading(false);
-      } catch (err) {
-        setError(err.message || 'Error fetching jobs');
-        setLoading(false);
-      }
-    };
-    fetchJobs();
   }, []);
 
   // Filter jobs based on search term & type
