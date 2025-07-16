@@ -6,17 +6,102 @@ const cors = require('cors');
 const app = express();
 const PORT = process.env.PORT || 4000;
 
-app.use(cors());
+// Configure CORS
+const corsOptions = {
+  origin: ['http://localhost:5173', 'http://127.0.0.1:5173'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
+  credentials: true,
+  optionsSuccessStatus: 204,
+  preflightContinue: false
+};
+
+// Enable pre-flight requests
+app.options('*', cors(corsOptions));
+app.use(cors(corsOptions));
 app.use(express.json());
 
+// Error handling middleware
+app.use((err, req, res, next) => {
+  console.error('❌ Unhandled error:', {
+    message: err.message,
+    stack: err.stack,
+    url: req.originalUrl,
+    method: req.method,
+    body: req.body,
+    query: req.query,
+    params: req.params
+  });
+  
+  // If headers are already sent, delegate to default error handler
+  if (res.headersSent) {
+    return next(err);
+  }
+  
+  res.status(500).json({ 
+    error: 'Internal Server Error',
+    message: process.env.NODE_ENV === 'development' ? err.message : 'Something went wrong',
+    ...(process.env.NODE_ENV === 'development' && { stack: err.stack })
+  });
+});
+
+// Log all requests
+app.use((req, res, next) => {
+  console.log(`[${new Date().toISOString()}] ${req.method} ${req.originalUrl}`);
+  next();
+});
+
 // MongoDB connection
-mongoose
-  .connect(process.env.MONGO_URI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-  })
-  .then(() => console.log('Connected to MongoDB'))
-  .catch((err) => console.error('MongoDB connection error:', err));
+const connectDB = async () => {
+  try {
+    console.log('Attempting to connect to MongoDB...');
+    
+    // Close any existing connections first
+    if (mongoose.connection.readyState === 1) {
+      console.log('Closing existing MongoDB connection...');
+      await mongoose.disconnect();
+    }
+    
+    // Connect to MongoDB
+    await mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/jobportal', {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+      serverSelectionTimeoutMS: 5000, // Timeout after 5s instead of 30s
+      socketTimeoutMS: 45000, // Close sockets after 45 seconds of inactivity
+    });
+    
+    console.log('✅ MongoDB connected successfully');
+    
+  } catch (error) {
+    console.error('❌ MongoDB connection error:', error.message);
+    console.error('Connection string used:', process.env.MONGO_URI || 'mongodb://localhost:27017/jobportal');
+    console.error('Please make sure MongoDB is running and accessible');
+    process.exit(1); // Exit with failure
+  }
+};
+
+// Connect to MongoDB when the app starts
+connectDB().catch(console.error);
+
+// Log MongoDB connection status
+mongoose.connection.on('connected', () => {
+  console.log('✅ Mongoose connected to MongoDB');
+});
+
+mongoose.connection.on('error', (err) => {
+  console.error('❌ Mongoose connection error:', err);
+});
+
+mongoose.connection.on('disconnected', () => {
+  console.log('ℹ️ Mongoose disconnected from MongoDB');
+});
+
+// Close the Mongoose connection when the Node process ends
+process.on('SIGINT', async () => {
+  await mongoose.connection.close();
+  console.log('Mongoose connection closed through app termination');
+  process.exit(0);
+});
 
 // ----- Mongoose Schemas -----
 const jobSchema = new mongoose.Schema(
@@ -82,18 +167,42 @@ async function seedJobs() {
 seedJobs().catch(console.error);
 
 // ----- Routes -----
-// GET /jobs – list jobs
-app.get('/jobs', async (_req, res) => {
+// Use /api prefix for all routes
+const router = express.Router();
+
+// GET /api/jobs – list jobs
+router.get('/jobs', async (_req, res, next) => {
+  console.log('🔍 GET /api/jobs - Fetching jobs...');
+  
+  // Check if MongoDB is connected
+  if (mongoose.connection.readyState !== 1) {
+    console.error('❌ MongoDB not connected');
+    return res.status(503).json({ 
+      error: 'Database not available',
+      message: 'Cannot connect to the database. Please try again later.'
+    });
+  }
+  
   try {
-    const jobs = await Job.find().sort({ createdAt: -1 });
+    const jobs = await Job.find().sort({ createdAt: -1 }).lean().exec();
+    console.log(`✅ Found ${jobs.length} jobs`);
+    
+    if (!jobs || jobs.length === 0) {
+      console.log('No jobs found in the database');
+      // Return empty array instead of error if no jobs found
+      return res.json([]);
+    }
+    
     res.json(jobs);
+    
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('❌ Error in GET /api/jobs:', err);
+    next(err); // Pass to error handler middleware
   }
 });
 
-// GET /jobs/:id – job details
-app.get('/jobs/:id', async (req, res) => {
+// GET /api/jobs/:id – job details
+router.get('/jobs/:id', async (req, res) => {
   try {
     const job = await Job.findById(req.params.id);
     if (!job) return res.status(404).json({ error: 'Job not found' });
@@ -103,8 +212,8 @@ app.get('/jobs/:id', async (req, res) => {
   }
 });
 
-// POST /applications – submit application
-app.post('/applications', async (req, res) => {
+// POST /api/applications – submit application
+router.post('/applications', async (req, res) => {
   try {
     const { job_id, name, email, resume_link, cover_letter } = req.body;
 
@@ -127,8 +236,8 @@ app.post('/applications', async (req, res) => {
   }
 });
 
-// GET /applications – list applications
-app.get('/applications', async (_req, res) => {
+// GET /api/applications – get all applications (admin)
+router.get('/applications', async (_req, res) => {
   try {
     const apps = await Application.find()
       .populate('job_id', 'title')
@@ -139,5 +248,61 @@ app.get('/applications', async (_req, res) => {
   }
 });
 
-// Start server
-app.listen(PORT, () => console.log(`API running on http://localhost:${PORT}`));
+// Mount the router at /api
+app.use('/api', router);
+
+// Start the server
+const startServer = async () => {
+  try {
+    // Ensure MongoDB is connected first
+    if (mongoose.connection.readyState !== 1) {
+      console.log('⏳ Connecting to MongoDB...');
+      await connectDB();
+    }
+
+    const server = app.listen(PORT, '0.0.0.0', () => {
+      console.log('\n=== Server Information ===');
+      console.log(`✅ Server is running on port ${PORT}`);
+      console.log(`🔍 Local: http://localhost:${PORT}/api/jobs`);
+      console.log(`🌐 Network: http://[YOUR_IP]:${PORT}/api/jobs`);
+      console.log('===========================\n');
+    });
+
+    // Handle server errors
+    server.on('error', (error) => {
+      if (error.code === 'EADDRINUSE') {
+        console.error(`❌ Port ${PORT} is already in use`);
+      } else {
+        console.error('❌ Server error:', error);
+      }
+      process.exit(1);
+    });
+
+    // Handle process termination
+    process.on('SIGINT', async () => {
+      console.log('\n🔽 Shutting down gracefully...');
+      await mongoose.connection.close();
+      server.close(() => {
+        console.log('✅ Server and database connections closed');
+        process.exit(0);
+      });
+    });
+
+  } catch (error) {
+    console.error('❌ Failed to start server:', error);
+    process.exit(1);
+  }
+};
+
+// Start the server
+startServer();
+
+// Handle unhandled promise rejections
+process.on('unhandledRejection', (err) => {
+  console.error('❌ Unhandled Rejection:', err);
+  if (server) {
+    server.close(() => process.exit(1));
+  } else {
+    process.exit(1);
+  }
+});

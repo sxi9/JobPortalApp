@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Search,
   MapPin,
@@ -19,7 +19,7 @@ import {
 /*                                   HEADER                                   */
 /* -------------------------------------------------------------------------- */
 
-export const Header = ({ currentPage, setCurrentPage, isAdmin, setIsAdmin }) => (
+const Header = ({ currentPage, setCurrentPage, isAdmin, setIsAdmin }) => (
   <header className="bg-white shadow-sm border-b">
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div className="flex justify-between items-center h-16">
@@ -61,7 +61,7 @@ export const Header = ({ currentPage, setCurrentPage, isAdmin, setIsAdmin }) => 
 /*                                   FOOTER                                   */
 /* -------------------------------------------------------------------------- */
 
-export const Footer = () => (
+const Footer = () => (
   <footer className="bg-gray-800 text-white py-8 mt-12">
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div className="text-center">
@@ -76,7 +76,7 @@ export const Footer = () => (
 /*                               UTILITY PIECES                               */
 /* -------------------------------------------------------------------------- */
 
-export const LoadingSpinner = () => (
+const LoadingSpinner = () => (
   <div className="flex justify-center items-center py-12">
     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600" />
   </div>
@@ -86,7 +86,7 @@ export const LoadingSpinner = () => (
 /*                                  JOB CARD                                  */
 /* -------------------------------------------------------------------------- */
 
-export const JobCard = ({ job, setSelectedJob, setCurrentPage }) => (
+const JobCard = ({ job, onViewDetails }) => (
   <div className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300 p-6 border border-gray-200">
     <div className="flex justify-between items-start mb-4">
       <h3 className="text-xl font-semibold text-gray-900">{job.title}</h3>
@@ -118,8 +118,8 @@ export const JobCard = ({ job, setSelectedJob, setCurrentPage }) => (
 
     <button
       onClick={() => {
-        setSelectedJob(job);
-        setCurrentPage('jobDetail');
+        console.log('View Details clicked for job:', job);
+        onViewDetails(job);
       }}
       className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition-colors duration-200 font-medium"
     >
@@ -132,7 +132,7 @@ export const JobCard = ({ job, setSelectedJob, setCurrentPage }) => (
 /*                               SEARCH / FILTER                              */
 /* -------------------------------------------------------------------------- */
 
-export const SearchFilter = ({ searchTerm, setSearchTerm, filterType, setFilterType }) => (
+const SearchFilter = ({ searchTerm, setSearchTerm, filterType, setFilterType }) => (
   <div className="bg-white p-6 rounded-lg shadow-md mb-8">
     <div className="flex flex-col md:flex-row gap-4">
       <div className="flex-1 relative">
@@ -166,17 +166,7 @@ export const SearchFilter = ({ searchTerm, setSearchTerm, filterType, setFilterT
 /*                                   PAGES                                    */
 /* -------------------------------------------------------------------------- */
 
-export const HomePage = ({
-  loading,
-  error,
-  filteredJobs,
-  setSelectedJob,
-  setCurrentPage,
-  searchTerm,
-  setSearchTerm,
-  filterType,
-  setFilterType,
-}) => (
+const HomePage = ({ loading, error, filteredJobs, setSelectedJob, searchTerm, setSearchTerm, filterType, setFilterType }) => (
   <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
     <div className="text-center mb-8">
       <h1 className="text-4xl font-bold text-gray-900 mb-4">Find Your Dream Job</h1>
@@ -202,8 +192,7 @@ export const HomePage = ({
           <JobCard
             key={job._id || job.id}
             job={job}
-            setSelectedJob={setSelectedJob}
-            setCurrentPage={setCurrentPage}
+            onViewDetails={setSelectedJob}
           />
         ))}
       </div>
@@ -217,7 +206,19 @@ export const HomePage = ({
   </div>
 );
 
-export const JobDetailPage = ({ selectedJob, setCurrentPage }) => (
+const JobDetailPage = ({ selectedJob, setCurrentPage }) => {
+  console.log('JobDetailPage - selectedJob:', selectedJob);
+  
+  if (!selectedJob) {
+    console.error('No job selected');
+    return (
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <p>No job selected. Please go back and select a job.</p>
+      </div>
+    );
+  }
+  
+  return (
   <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
     <button
       onClick={() => setCurrentPage('home')}
@@ -278,143 +279,126 @@ export const JobDetailPage = ({ selectedJob, setCurrentPage }) => (
       </button>
     </div>
   </div>
-);
+  );
+};
 
-export const ApplicationForm = ({
+const ApplicationForm = ({
   selectedJob,
   formData,
   setFormData,
   formErrors,
   handleSubmit,
   loading,
-  setCurrentPage,
-}) => (
-  <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-    <button
-      onClick={() => setCurrentPage('jobDetail')}
-      className="flex items-center text-blue-600 hover:text-blue-800 mb-6"
-    >
-      <ChevronLeft className="h-4 w-4 mr-1" />
-      Back to Job Details
-    </button>
+  setCurrentPage
+}) => {
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
 
-    <div className="bg-white rounded-lg shadow-lg p-8">
-      <h1 className="text-3xl font-bold text-gray-900 mb-2">Apply for {selectedJob.title}</h1>
-      <p className="text-gray-600 mb-8">at {selectedJob.company}</p>
+  // Form submission is handled by the parent component
+  const handleFormSubmit = (e) => {
+    e.preventDefault();
+    handleSubmit(e);
+  };
 
-      <form onSubmit={handleSubmit} className="space-y-6">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            <User className="inline h-4 w-4 mr-1" /> Full Name
-          </label>
-          <input
-            type="text"
-            value={formData.name}
-            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-            className={`w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-              formErrors.name ? 'border-red-500' : 'border-gray-300'
-            }`}
-            placeholder="Enter your full name"
-          />
-          {formErrors.name && <p className="text-red-500 text-sm mt-1">{formErrors.name}</p>}
-        </div>
+  return (
+    <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="bg-white shadow rounded-lg p-6">
+        <h1 className="text-2xl font-bold text-gray-900 mb-6">Apply for {selectedJob?.title}</h1>
+        
+        <form onSubmit={handleFormSubmit} className="space-y-4">
+          <div>
+            <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
+              Full Name
+            </label>
+            <input
+              type="text"
+              id="name"
+              name="name"
+              value={formData.name}
+              onChange={handleChange}
+              className={`w-full px-3 py-2 border rounded-md ${formErrors.name ? 'border-red-500' : 'border-gray-300'}`}
+              placeholder="Your full name"
+            />
+            {formErrors.name && <p className="mt-1 text-sm text-red-600">{formErrors.name}</p>}
+          </div>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            <Mail className="inline h-4 w-4 mr-1" /> Email Address
-          </label>
-          <input
-            type="email"
-            value={formData.email}
-            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-            className={`w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-              formErrors.email ? 'border-red-500' : 'border-gray-300'
-            }`}
-            placeholder="Enter your email address"
-          />
-          {formErrors.email && <p className="text-red-500 text-sm mt-1">{formErrors.email}</p>}
-        </div>
+          <div>
+            <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+              Email
+            </label>
+            <input
+              type="email"
+              id="email"
+              name="email"
+              value={formData.email}
+              onChange={handleChange}
+              className={`w-full px-3 py-2 border rounded-md ${formErrors.email ? 'border-red-500' : 'border-gray-300'}`}
+              placeholder="your.email@example.com"
+            />
+            {formErrors.email && <p className="mt-1 text-sm text-red-600">{formErrors.email}</p>}
+          </div>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            <FileText className="inline h-4 w-4 mr-1" /> Resume Link
-          </label>
-          <input
-            type="url"
-            value={formData.resumeLink}
-            onChange={(e) => setFormData({ ...formData, resumeLink: e.target.value })}
-            className={`w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-              formErrors.resumeLink ? 'border-red-500' : 'border-gray-300'
-            }`}
-            placeholder="https://your-resume-link.com"
-          />
-          {formErrors.resumeLink && (
-            <p className="text-red-500 text-sm mt-1">{formErrors.resumeLink}</p>
-          )}
-        </div>
+          <div>
+            <label htmlFor="resumeLink" className="block text-sm font-medium text-gray-700 mb-1">
+              Resume Link
+            </label>
+            <input
+              type="url"
+              id="resumeLink"
+              name="resumeLink"
+              value={formData.resumeLink}
+              onChange={handleChange}
+              className={`w-full px-3 py-2 border rounded-md ${formErrors.resumeLink ? 'border-red-500' : 'border-gray-300'}`}
+              placeholder="https://example.com/your-resume.pdf"
+            />
+            <p className="mt-1 text-xs text-gray-500">Please upload your resume to a file sharing service and provide the link here.</p>
+            {formErrors.resumeLink && <p className="mt-1 text-sm text-red-600">{formErrors.resumeLink}</p>}
+          </div>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            <FileText className="inline h-4 w-4 mr-1" /> Cover Letter
-          </label>
-          <textarea
-            value={formData.coverLetter}
-            onChange={(e) => setFormData({ ...formData, coverLetter: e.target.value })}
-            rows="6"
-            className={`w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-              formErrors.coverLetter ? 'border-red-500' : 'border-gray-300'
-            }`}
-            placeholder="Tell us why you're interested in this position..."
-          />
-          {formErrors.coverLetter && (
-            <p className="text-red-500 text-sm mt-1">{formErrors.coverLetter}</p>
-          )}
-        </div>
+          <div>
+            <label htmlFor="coverLetter" className="block text-sm font-medium text-gray-700 mb-1">
+              Cover Letter
+            </label>
+            <textarea
+              id="coverLetter"
+              name="coverLetter"
+              value={formData.coverLetter}
+              onChange={handleChange}
+              rows={6}
+              className={`w-full px-3 py-2 border rounded-md ${formErrors.coverLetter ? 'border-red-500' : 'border-gray-300'}`}
+              placeholder="Tell us why you're a great fit for this position..."
+            />
+            {formErrors.coverLetter && <p className="mt-1 text-sm text-red-600">{formErrors.coverLetter}</p>}
+          </div>
 
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full bg-blue-600 text-white py-3 px-6 rounded-md hover:bg-blue-700 transition-colors duration-200 font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
-        >
-          {loading ? (
-            <>
-              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
-              Submitting...
-            </>
-          ) : (
-            <>
-              <Send className="h-4 w-4 mr-2" /> Submit Application
-            </>
-          )}
-        </button>
-      </form>
-    </div>
-  </div>
-);
-
-export const ConfirmationPage = ({ selectedJob, setCurrentPage }) => (
-  <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-    <div className="bg-white rounded-lg shadow-lg p-8 text-center">
-      <div className="bg-green-100 rounded-full w-20 h-20 flex items-center justify-center mx-auto mb-6">
-        <svg className="h-10 w-10 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-        </svg>
+          <div className="flex justify-end space-x-3 pt-4">
+            <button
+              type="button"
+              onClick={() => setCurrentPage('jobDetail')}
+              className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={loading}
+              className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
+            >
+              {loading ? 'Submitting...' : 'Submit Application'}
+            </button>
+          </div>
+        </form>
       </div>
-      <h1 className="text-3xl font-bold text-gray-900 mb-4">Application Submitted!</h1>
-      <p className="text-lg text-gray-600 mb-8">
-        Thank you for applying to {selectedJob.title} at {selectedJob.company}. We'll review your application and get back to you soon.
-      </p>
-      <button
-        onClick={() => setCurrentPage('home')}
-        className="bg-blue-600 text-white py-3 px-8 rounded-md hover:bg-blue-700 transition-colors duration-200 font-medium"
-      >
-        Browse More Jobs
-      </button>
     </div>
-  </div>
-);
+  );
+};
 
-export const AdminView = ({ applications }) => (
+const AdminView = ({ applications, loading, error, onBackToJobs }) => (
   <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
     <h1 className="text-3xl font-bold text-gray-900 mb-8">Admin Dashboard</h1>
 
@@ -459,7 +443,8 @@ export const AdminView = ({ applications }) => (
   </div>
 );
 
-export default {
+// Export all components as named exports
+export {
   Header,
   Footer,
   LoadingSpinner,
@@ -468,6 +453,5 @@ export default {
   HomePage,
   JobDetailPage,
   ApplicationForm,
-  ConfirmationPage,
   AdminView,
 };
