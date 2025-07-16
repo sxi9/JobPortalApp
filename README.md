@@ -2,6 +2,14 @@
 
 A full-stack job portal application built with React, Vite, Node.js, Express, and MongoDB. This application allows job seekers to browse and apply for jobs, while providing administrators with tools to manage job listings and applications.
 
+## 🎥 Demo
+
+https://user-images.githubusercontent.com/your-username/your-repo-name/IMG_6434.MP4
+
+https://github.com/sxi9/JobPortalApp/raw/main/public/demo/IMG_6434.MP4
+
+> *Note: Click the link above to view the demo video. The video shows the job portal in action, including browsing jobs, submitting applications, and using the admin dashboard.*
+
 ## 🚀 Features
 
 ### Job Seeker Features
