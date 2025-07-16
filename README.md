@@ -1,6 +1,76 @@
 # Job Portal Application
 
-A full-stack job portal application built with React, Vite, Node.js, Express, and MongoDB. This application allows job seekers to browse and apply for jobs, while providing administrators with tools to manage job listings and applications.
+<div align="center">
+  <p align="center">
+    <a href="https://sxi9.github.io/JobPortalApp/" target="_blank">View Live Demo</a>
+    ·
+    <a href="https://github.com/sxi9/JobPortalApp/issues">Report Bug</a>
+    ·
+    <a href="https://github.com/sxi9/JobPortalApp/issues">Request Feature</a>
+  </p>
+  <p align="center">
+    <img src="https://img.shields.io/github/stars/sxi9/JobPortalApp?style=social" alt="GitHub stars" />
+    <img src="https://img.shields.io/github/forks/sxi9/JobPortalApp?style=social" alt="GitHub forks" />
+    <img src="https://img.shields.io/github/license/sxi9/JobPortalApp" alt="License" />
+  </p>
+</div>
+
+## 📋 About The Project
+
+Job Portal is a modern, full-stack web application designed to bridge the gap between job seekers and employers. Built with cutting-edge technologies, it offers a seamless experience for both candidates looking for their next opportunity and employers seeking top talent.
+
+### 🎯 Key Objectives
+- Provide an intuitive platform for job seekers to discover and apply for opportunities
+- Offer employers a powerful dashboard to manage job postings and applications
+- Implement robust security measures to protect user data
+- Ensure a responsive design that works across all devices
+- Deliver a fast, reliable, and scalable solution
+
+### 🛠️ Built With
+
+#### Frontend
+- [React](https://reactjs.org/) - Frontend library
+- [Vite](https://vitejs.dev/) - Build tool and dev server
+- [Tailwind CSS](https://tailwindcss.com/) - Utility-first CSS framework
+- [React Router](https://reactrouter.com/) - Client-side routing
+- [React Icons](https://react-icons.github.io/react-icons/) - Icon library
+
+#### Backend
+- [Node.js](https://nodejs.org/) - JavaScript runtime
+- [Express](https://expressjs.com/) - Web application framework
+- [MongoDB](https://www.mongodb.com/) - NoSQL database
+- [Mongoose](https://mongoosejs.com/) - MongoDB object modeling
+- [CORS](https://www.npmjs.com/package/cors) - Cross-origin resource sharing
+
+#### Development Tools
+- [Git](https://git-scm.com/) - Version control
+- [GitHub](https://github.com/) - Code hosting
+- [ESLint](https://eslint.org/) - JavaScript linter
+- [Prettier](https://prettier.io/) - Code formatter
+
+### 🌟 Features
+
+#### For Job Seekers
+- Browse and search job listings with advanced filters
+- Save favorite job postings
+- One-click application process
+- Track application status
+- Responsive design for mobile and desktop
+
+#### For Employers/Admins
+- Create and manage job postings
+- Review and manage applications
+- Filter and sort candidates
+- Download applicant resumes
+- Analytics dashboard
+
+### 🚀 Getting Started
+
+Get up and running with Job Portal in minutes. Follow our [installation guide](#-getting-started) to set up the development environment.
+
+### 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ## 🎥 Demo
 
